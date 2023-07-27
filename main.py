@@ -103,19 +103,19 @@ action_card2 = []
 bynker_card = []
 catas_card = []
 threat_card = []
-open_card("prof.txt", professions_card)
-open_card("action_card1.txt", action_card1)
-open_card("action_card2.txt", action_card2)
-open_card("hobbi.txt", hobbies_card)
-open_card("health.txt", health_status_card)
-open_card("bio.txt", biological_parameters_card)
-open_card("bag.txt", baggage_card)
-open_card("phobia.txt", phobias_card)
-open_card("humanq.txt", human_qualities_card)
-open_card("facts.txt", facts_card)
-open_card("benker.txt", bynker_card)
-open_card("catas.txt", catas_card)
-open_card("threat.txt", threat_card)
+open_card("cards/prof.txt", professions_card)
+open_card("cards/action_card1.txt", action_card1)
+open_card("cards/action_card2.txt", action_card2)
+open_card("cards/hobbi.txt", hobbies_card)
+open_card("cards/health.txt", health_status_card)
+open_card("cards/bio.txt", biological_parameters_card)
+open_card("cards/bag.txt", baggage_card)
+open_card("cards/phobia.txt", phobias_card)
+open_card("cards/humanq.txt", human_qualities_card)
+open_card("cards/facts.txt", facts_card)
+open_card("cards/benker.txt", bynker_card)
+open_card("cards/catas.txt", catas_card)
+open_card("cards/threat.txt", threat_card)
 
 
 class Player:
