@@ -85,7 +85,7 @@ def change_char(message, char):
             card.update_characteristic(char, random.choice(list_to_change))
 
         bot.send_message(message.chat.id, f"Выбранная характеристика '{char}' в карточках всех игроков была изменена,"
-                                          " получите обновленную карточку командой /play")
+                                          "новая карточка была отправлена вам в личные сообщения или получите обновленную карточку командой /play")
     else:
         bot.send_message(message.chat.id, "Список значений для выбранной характеристики пуст.")
 
@@ -196,7 +196,7 @@ def start(message):
 def help(message):
     bot.send_message(message.chat.id,"Перед началом игры убедитесь, что у всех игроков есть личный чат с ботом.\n\n"
                                      "/game - начните игру, вы получите 1 карту катастрофы и 5 карт бункера, "
-                                     "ввыедите команду в любое время, чтобы заново прочитать условия\n\n"
+                                     "введите команду в любое время, чтобы заново прочитать условия\n\n"
                                      "/play - Вы вступите в игру и бот отправит вам в личные сообщения вашу карту игрока, "
                                      "используйте эту команду чтобы в любой момент увидеть свою обновленную карту игрока\n\n"
                                      "/change_all_1 - меняет всем игрокам значение Профессии (доступно только администратору чата)\n\n"
@@ -240,6 +240,7 @@ def change1(message):
     if is_admin(message):
         if start_game:
             if len(player_cards) !=0:
+
                 char_dict = {
                     '/change_all_1': "Профессия",
                     '/change_all_2': "Биологические параметры",
@@ -255,6 +256,10 @@ def change1(message):
                 if command in char_dict:
                     char = char_dict[command]
                     change_char(message, char)
+                    for id in player_cards:
+                        show_card(message, id)
+
+
             else:
                 bot.send_message(message.chat.id, "В игре нет игроков, каждому участнику игры необходимо ввести команду /play")
 
