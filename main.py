@@ -10,53 +10,43 @@ def open_card(filename, list=[]):
     for line in file:
         list.append(line.rstrip())
 
-def is_admin(message):
-    user = message.from_user
-    chat_member = bot.get_chat_member(message.chat.id, user.id)
-    if chat_member.status in ('administrator', 'creator'):
-        return True
-
-    user_id = user.id
-    if user_id in player_cards and player_cards[user_id].is_master:
-        return True
-
-    return False
 
 
-def show_card(message, player_id):
-    player = player_cards[player_id]
-    card_text = "Ваша карточка игрока:\n"
+# def show_card(message, player_id):
+#     player = player_cards[player_id]
+#     card_text = "Ваша карточка игрока:\n"
+#
+#     for i, (key, value) in enumerate(player.card.items(), 0):
+#         card_text += f"{i} - {key}: {value}\n"
+#
+#     bot.send_message(message.from_user.id, card_text)
 
-    for i, (key, value) in enumerate(player.card.items(), 0):
-        card_text += f"{i} - {key}: {value}\n"
 
-    bot.send_message(message.from_user.id, card_text)
-
-
-def change_choise(message, command):
-    card_char = {
-        1 : "Профессия",
-        2 : "Биологические параметры",
-        3 : "Состояние здоровья",
-        4 : "Фобия",
-        5 : "Багаж",
-        6 : "Хобби",
-        7 : "Человеческое качество",
-        8 : "Факт 1",
-        9 : "Факт 2",
-        10 : "Карта действия 1",
-        11 : "Карта действия 2"
-    }
-    if command in card_char:
-        return card_char[command]
-    else:
-        bot.send_message(message.chat.id, "Указанная характеристика не найдена в карточке игрока.")
+# def change_choise(message, command):
+#     card_char = {
+#         1 : "Профессия",
+#         2 : "Биологические параметры",
+#         3 : "Состояние здоровья",
+#         4 : "Фобия",
+#         5 : "Багаж",
+#         6 : "Хобби",
+#         7 : "Человеческое качество",
+#         8 : "Факт 1",
+#         9 : "Факт 2",
+#         10 : "Карта действия 1",
+#         11 : "Карта действия 2"
+#     }
+#     if command in card_char:
+#         return card_char[command]
+#     else:
+#         bot.send_message(message.chat.id, "Указанная характеристика не найдена в карточке игрока.")
 
 def is_player_number(message, command):
     pass
 
 def change_char(message, char):
-    if char not in player_cards[next(iter(player_cards))].card:
+    if char not in player_cards[next(iter(player_cards))].card: #функция больше не работает т.к все карточки
+                                                                # храняться в классе game и должны меняться через него
         bot.send_message(message.chat.id, "Указанная характеристика не найдена в карточке игрока.")
         return
 
@@ -85,7 +75,8 @@ def change_char(message, char):
             card.update_characteristic(char, random.choice(list_to_change))
 
         bot.send_message(message.chat.id, f"Выбранная характеристика '{char}' в карточках всех игроков была изменена,"
-                                          "новая карточка была отправлена вам в личные сообщения или получите обновленную карточку командой /play")
+                                          "новая карточка была отправлена вам в личные сообщения"
+                                          " или получите обновленную карточку командой /play")
     else:
         bot.send_message(message.chat.id, "Список значений для выбранной характеристики пуст.")
 
@@ -124,6 +115,7 @@ class Player:
         self.user_id = user_id
         self.number = number
         self.master = False
+        self.open_count = 0
         self.card = {
             "Номер игрока": number,
             "Профессия": random.choice(professions_card),
@@ -139,22 +131,84 @@ class Player:
             "Карта действия 2": random.choice(action_card2),
         }
 
-    def set_master(self):
-        self.master = True
+    @classmethod
+    def is_master(cls, message):
+        user = message.from_user
+        chat_member = bot.get_chat_member(message.chat.id, user.id)
+        if chat_member.status in ('administrator', 'creator'):
+            return True
 
-    def is_master(self):
-        return self.master
+        user_id = user.id
+        if user_id in player_cards and player_cards[user_id].is_master():
+            return True
+
+        return False
 
     def update_characteristic(self, characteristic, new_value):
         if characteristic in self.card:
             self.card[characteristic] = new_value
 
 
+
+
+class Game:
+    def __init__(self, chat_id):
+        self.chat_id = chat_id
+        self.start_game = True
+        self.game_data = {
+            'catastrophes': [random.choice(catas_card)],
+            'bunkers': random.sample(bynker_card, 5),
+            'player_cards': {},
+            'threats': []
+        }
+
+    def catastrophes(self):
+        return self.game_data['catastrophes']
+
+    def bunkers(self):
+        return self.game_data['bunkers']
+
+    def add_player_card(self, player_id, player_card):
+        self.game_data['player_cards'][player_id] = player_card
+
+    def get_player_card(self, player_id):
+        return self.game_data['player_cards'].get(player_id)
+
+    def get_all_player_cards(self):
+        return self.game_data['player_cards']
+    def is_player(self, player_id ):
+        return player_id in self.game_data['player_cards']
+
+    def show_card(self, message, player_id):
+        player = self.game_data['player_cards'].get(player_id)
+        if player:
+            card_text = "Ваша карточка игрока:\n"
+            for i, (key, value) in enumerate(player.card.items(), 0):
+                card_text += f"{i} - {key}: {value}\n"
+            bot.send_message(message.from_user.id, card_text)
+        else:
+            bot.send_message(message.from_user.id, "Ваша карточка игрока не найдена.")
+
+
+
+
+
+    def end_game(self):
+        self.start_game = False
+        self.game_data['player_cards'].clear()
+
+    def process_game(self):
+        return self.start_game
+
+games = {}
+
 player_cards = {}
 player_number = 0
-start_game = False
-catastrophes = []
-bunkers = []
+
+
+#####
+
+
 @bot.message_handler(commands=['start'])
 def start(message):
     bot.send_message(message.chat.id, 'Всем участникам игры необходимо написать боту в личные сообщения команду /start\n'
@@ -166,30 +220,39 @@ def start(message):
 
 @bot.message_handler(commands=['game'])
 def start(message):
-    global start_game
-    global bunkers
-    global catastrophes
-    if not start_game:
-        start_game = True
-        catastrophes = [random.choice(catas_card)]
-        bunkers = random.sample(bynker_card, 5)
-        bot.send_message(message.chat.id, "Вы начали новую игру")
-        bot.send_message(message.chat.id, f"Катастрофа:\n\n{catastrophes[0]}")
-        mes = ""
-        for i in bunkers:
-            mes += str(i) + "\n\n"
 
-        bot.send_message(message.chat.id, f"Условия бункера:\n\n{mes}")
+    global games
+    chat_id = message.chat.id
+    if Player.is_master(message):
+        if chat_id not in games:
 
+            game = Game(chat_id)
+            games[chat_id] = game
+
+            global catastrophes,bunkers
+            catastrophes = game.game_data['catastrophes']
+            bunkers = game.game_data['bunkers']
+
+            bot.send_message(message.chat.id, "Вы начали новую игру")
+            bot.send_message(message.chat.id, f"Катастрофа:\n\n{catastrophes[0]}")
+            mes = "\n\n"
+            bot.send_message(message.chat.id, f"Условия бункера:\n\n{mes.join(bunkers)}")
+            bot.send_message(message.chat.id,"Всем желающим принять участие в игре нужно разрешить "
+                                             "боту присылать личные сообщения, для этого отправьте ему в личные сообщения "
+                                             "команду /start.\n\n"
+                                             "Чтобы присоедениться к игре и получить карту игрока отправьте команду "
+                                             "/play в общий чат.\n\n"
+                                             "Чтобы закончить игру отправьте команду /delete\n\n"
+                                             "Список всех команд для игры - /help")
+
+
+        else:
+            bot.send_message(message.chat.id, "Условия вашей игры:")
+            bot.send_message(message.chat.id, f"Катастрофа:\n\n{catastrophes[0]}")
+            mes = "\n\n"
+            bot.send_message(message.chat.id, f"Условия бункера:\n\n{mes.join(bunkers)}")
     else:
-        bot.send_message(message.chat.id, "Условия вашей игры:")
-        bot.send_message(message.chat.id, f"Катастрофа:\n\n{catastrophes[0]}")
-        mes = ""
-        for i in bunkers:
-            mes += str(i) + "\n\n"
-
-        bot.send_message(message.chat.id, f"Условия бункера:\n\n{mes}")
-
+        bot.send_message(message.chat.id,"Чтобы начать игру вам нужно быть ведущим или администратором чата")
 
 
 @bot.message_handler(commands=['help'])
@@ -214,21 +277,24 @@ def help(message):
 
 @bot.message_handler(commands=['play'])
 def card(message):
-    global start_game
-    if start_game:
+    chat_id = message.chat.id
+
+    if chat_id  in games:
+        game = games[chat_id]
         player_id = message.from_user.id
 
-        if player_id in player_cards:
-            show_card(message, player_id)
+        if game.is_player( player_id ):
+            game.show_card(message, player_id)
 
         else:
             global player_number
             player_number += 1
 
             player = Player(player_id, player_number)
-            player_cards[player_id] = player
+            game.add_player_card(player_id,player)
+            game.show_card(message, player_id)
 
-            show_card(message, player_id)
+
     else:
         bot.send_message(message.chat.id, "Вы не начали игру, введите /game")
 
@@ -237,27 +303,26 @@ def card(message):
 def change1(message):
     command = message.text.split()[0]
     global start_game
-    if is_admin(message):
-        if start_game:
-            if len(player_cards) !=0:
+    if Player.is_master(message):
+        chat_id = message.chat.id
+        if chat_id in games:
+            game = games[chat_id]
 
-                char_dict = {
-                    '/change_all_1': "Профессия",
-                    '/change_all_2': "Биологические параметры",
-                    '/change_all_3': "Состояние здоровья",
-                    '/change_all_4': "Фобия",
-                    '/change_all_5': "Багаж",
-                    '/change_all_6': "Хобби",
-                    '/change_all_7': "Человеческое качество",
-                    '/change_all_8': "Факт 1",
-                    '/change_all_9': "Факт 2"
-                }
+            char_dict = {
+                '/change_all_1': "Профессия",
+                '/change_all_2': "Биологические параметры",
+                '/change_all_3': "Состояние здоровья",
+                '/change_all_4': "Фобия",
+                '/change_all_5': "Багаж",
+                '/change_all_6': "Хобби",
+                '/change_all_7': "Человеческое качество",
+                '/change_all_8': "Факт 1",
+                '/change_all_9': "Факт 2"
+            }
 
-                if command in char_dict:
-                    char = char_dict[command]
-                    change_char(message, char)
-                    for id in player_cards:
-                        show_card(message, id)
+            if command in char_dict:
+                char = char_dict[command]
+                change_char(message, char)
 
 
             else:
@@ -273,15 +338,19 @@ def change1(message):
 
 @bot.message_handler(commands=['delete'])
 def delete(message):
-    if is_admin(message):
-        global start_game
-        if start_game:
-            start_game = False
-            global player_cards
-            player_cards.clear()
+    if Player.is_master(message):
+        chat_id = message.chat.id
+        if chat_id in games:
+
+            game = games[chat_id]
+
+            game.end_game()
+            games.pop(chat_id)
             global player_number
             player_number = 0
+
             bot.send_message(message.chat.id, "Все карточки игроков были удалены.")
+            print(game.game_data['player_cards'])
         else:
             bot.send_message(message.chat.id, "Вы не начали игру, введите /game")
 
