@@ -44,41 +44,7 @@ def open_card(filename, list=[]):
 def is_player_number(message, command):
     pass
 
-def change_char(message, char):
-    if char not in player_cards[next(iter(player_cards))].card: #функция больше не работает т.к все карточки
-                                                                # храняться в классе game и должны меняться через него
-        bot.send_message(message.chat.id, "Указанная характеристика не найдена в карточке игрока.")
-        return
 
-    list_to_change = []
-    if char == "Профессия":
-        list_to_change = professions_card
-    elif char == "Биологические параметры":
-        list_to_change = biological_parameters_card
-    elif char == "Состояние здоровья":
-        list_to_change = health_status_card
-    elif char == "Фобия":
-        list_to_change = phobias_card
-    elif char == "Багаж":
-        list_to_change = baggage_card
-    elif char == "Хобби":
-        list_to_change = hobbies_card
-    elif char == "Человеческое качество":
-        list_to_change = human_qualities_card
-    elif char == "Факт 1":
-        list_to_change = facts_card
-    elif char == "Факт 2":
-        list_to_change = facts_card
-
-    if list_to_change:
-        for card in player_cards.values():
-            card.update_characteristic(char, random.choice(list_to_change))
-
-        bot.send_message(message.chat.id, f"Выбранная характеристика '{char}' в карточках всех игроков была изменена,"
-                                          "новая карточка была отправлена вам в личные сообщения"
-                                          " или получите обновленную карточку командой /play")
-    else:
-        bot.send_message(message.chat.id, "Список значений для выбранной характеристики пуст.")
 
 
 professions_card = []
@@ -147,6 +113,8 @@ class Player:
     def update_characteristic(self, characteristic, new_value):
         if characteristic in self.card:
             self.card[characteristic] = new_value
+            return True
+        return False
 
 
 
@@ -190,7 +158,42 @@ class Game:
             bot.send_message(message.from_user.id, "Ваша карточка игрока не найдена.")
 
 
+    def select(self, char):
+        list_to_change = []
+        if char == "Профессия":
+            list_to_change = professions_card
+        elif char == "Биологические параметры":
+            list_to_change = biological_parameters_card
+        elif char == "Состояние здоровья":
+            list_to_change = health_status_card
+        elif char == "Фобия":
+            list_to_change = phobias_card
+        elif char == "Багаж":
+            list_to_change = baggage_card
+        elif char == "Хобби":
+            list_to_change = hobbies_card
+        elif char == "Человеческое качество":
+            list_to_change = human_qualities_card
+        elif char == "Факт 1":
+            list_to_change = facts_card
+        elif char == "Факт 2":
+            list_to_change = facts_card
+        if list_to_change:
+            return list_to_change
 
+    def change_char_all(self, message, char):
+        list_to_change = self.select(char)
+        if list_to_change:
+            for player_id, player in self.game_data['player_cards'].items():
+                if player.update_characteristic(char, random.choice(list_to_change)):
+                    bot.send_message(message.chat.id,
+                                     f"Выбранная характеристика '{char}' в карточках всех игроков была изменена,"
+                                     "новая карточка была отправлена вам в личные сообщения"
+                                     " или получите обновленную карточку командой /play")
+                else:
+                    bot.send_message(message.chat.id,"иди нахуй)))")
+        else:
+            bot.send_message(message.chat.id, "Список значений для выбранной характеристики пуст.")
 
 
     def end_game(self):
@@ -322,7 +325,7 @@ def change1(message):
 
             if command in char_dict:
                 char = char_dict[command]
-                change_char(message, char)
+                game.change_char_all(message, char)
 
 
             else:
